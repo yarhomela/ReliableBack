@@ -1,0 +1,47 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# 
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.Domain", "ReliableBack.Domain\ReliableBack.Domain.csproj", "{4149DBDC-9688-400D-9ADB-2855493D7989}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.Application", "ReliableBack.Application\ReliableBack.Application.csproj", "{6F0CD25E-0920-4D6F-AF9A-D3698AF589A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.Infrastructure", "ReliableBack.Infrastructure\ReliableBack.Infrastructure.csproj", "{BC454D20-C2A4-4CFE-88ED-0FE317CE76EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.API", "ReliableBack.API\ReliableBack.API.csproj", "{F4119E98-F8F1-4AB0-AF0A-55FDF7C2FB43}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.Worker", "ReliableBack.Worker\ReliableBack.Worker.csproj", "{6E1E42A1-C811-4A5C-894E-0EDA85088D1E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.Tests", "ReliableBack.Tests\ReliableBack.Tests.csproj", "{0B10C778-8500-434F-84C5-D814C4833A58}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4149DBDC-9688-400D-9ADB-2855493D7989}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4149DBDC-9688-400D-9ADB-2855493D7989}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4149DBDC-9688-400D-9ADB-2855493D7989}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4149DBDC-9688-400D-9ADB-2855493D7989}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F0CD25E-0920-4D6F-AF9A-D3698AF589A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F0CD25E-0920-4D6F-AF9A-D3698AF589A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F0CD25E-0920-4D6F-AF9A-D3698AF589A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F0CD25E-0920-4D6F-AF9A-D3698AF589A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC454D20-C2A4-4CFE-88ED-0FE317CE76EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC454D20-C2A4-4CFE-88ED-0FE317CE76EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC454D20-C2A4-4CFE-88ED-0FE317CE76EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC454D20-C2A4-4CFE-88ED-0FE317CE76EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4119E98-F8F1-4AB0-AF0A-55FDF7C2FB43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4119E98-F8F1-4AB0-AF0A-55FDF7C2FB43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4119E98-F8F1-4AB0-AF0A-55FDF7C2FB43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4119E98-F8F1-4AB0-AF0A-55FDF7C2FB43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E1E42A1-C811-4A5C-894E-0EDA85088D1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E1E42A1-C811-4A5C-894E-0EDA85088D1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E1E42A1-C811-4A5C-894E-0EDA85088D1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E1E42A1-C811-4A5C-894E-0EDA85088D1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B10C778-8500-434F-84C5-D814C4833A58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B10C778-8500-434F-84C5-D814C4833A58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B10C778-8500-434F-84C5-D814C4833A58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B10C778-8500-434F-84C5-D814C4833A58}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

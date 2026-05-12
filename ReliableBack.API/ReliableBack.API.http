@@ -1,0 +1,6 @@
+@ReliableBack.API_HostAddress = http://localhost:5185
+
+GET {{ReliableBack.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
