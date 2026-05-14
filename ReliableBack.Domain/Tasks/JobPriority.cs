@@ -1,6 +1,6 @@
 ﻿namespace ReliableBack.Domain.Tasks;
 
-public enum TaskPriority
+public enum JobPriority
 {
     Low = 0,
     Normal = 1,

@@ -10,9 +10,9 @@ public class TaskItem : Entity
 
     public JsonDocument? Payload { get; set; }
 
-    public TaskStatus Status { get; set; }
+    public JobStatus Status { get; set; }
 
-    public TaskPriority Priority { get; set; }
+    public JobPriority Priority { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -26,7 +26,7 @@ public class TaskItem : Entity
 
     public string? ErrorMessage { get; set; }
     
-    public void ChangeStatus(TaskStatus newStatus)
+    public void ChangeStatus(JobStatus newStatus)
     {
         var previousStatus = Status;
         Status = newStatus;

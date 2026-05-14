@@ -1,6 +1,6 @@
 ﻿namespace ReliableBack.Domain.Tasks;
 
-public enum TaskStatus
+public enum JobStatus
 {
     None = 0,
     Pending = 1,

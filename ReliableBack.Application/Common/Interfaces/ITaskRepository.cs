@@ -1,5 +1,4 @@
 ﻿using ReliableBack.Domain.Tasks;
-using TaskStatus = ReliableBack.Domain.Tasks.TaskStatus;
 
 namespace ReliableBack.Application.Common.Interfaces;
 
@@ -8,7 +7,7 @@ public interface ITaskRepository
     Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     
     Task<IReadOnlyList<TaskItem>> GetAllAsync(
-        TaskStatus? status,
+        JobStatus? status,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);

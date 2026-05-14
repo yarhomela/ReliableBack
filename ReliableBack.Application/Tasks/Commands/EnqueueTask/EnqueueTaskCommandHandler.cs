@@ -39,11 +39,11 @@ public sealed class EnqueueTaskCommandHandler
         return task.Id;
     }
 
-    private static string GetQueueName(TaskPriority priority) => priority switch
+    private static string GetQueueName(JobPriority priority) => priority switch
     {
-        TaskPriority.High   => "tasks.high",
-        TaskPriority.Normal => "tasks.normal",
-        TaskPriority.Low    => "tasks.low",
+        JobPriority.High   => "tasks.high",
+        JobPriority.Normal => "tasks.normal",
+        JobPriority.Low    => "tasks.low",
         _                   => "tasks.normal"
     };
 }
