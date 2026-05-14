@@ -14,12 +14,14 @@ public sealed class GetTaskListQueryHandler : IRequestHandler<GetTaskListQuery, 
 
     public async Task<IReadOnlyList<TaskDto>> Handle(GetTaskListQuery request, CancellationToken cancellationToken)
     {
-        var tasks = await _taskRepository.GetAllAsync(
-            request.Status,
-            request.Page,
-            request.PageSize,
-            cancellationToken
-        );
+        var parameters = new GetTaskListParameters()
+        {
+            Status = request.Status,
+            Page = request.Page,
+            PageSize = request.PageSize,
+        };
+        
+        var tasks = await _taskRepository.GetAllAsync(parameters, cancellationToken);
 
         return tasks
             .Select(task => new TaskDto(

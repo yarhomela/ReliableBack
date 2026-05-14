@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.Domain", "ReliableBack.Domain\ReliableBack.Domain.csproj", "{4149DBDC-9688-400D-9ADB-2855493D7989}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.Application", "ReliableBack.Application\ReliableBack.Application.csproj", "{6F0CD25E-0920-4D6F-AF9A-D3698AF589A0}"
@@ -12,6 +12,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.Worker", "ReliableBack.Worker\ReliableBack.Worker.csproj", "{6E1E42A1-C811-4A5C-894E-0EDA85088D1E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableBack.Tests", "ReliableBack.Tests\ReliableBack.Tests.csproj", "{0B10C778-8500-434F-84C5-D814C4833A58}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{678A500E-4D99-4341-980B-B9ED6168A464}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yml = docker-compose.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

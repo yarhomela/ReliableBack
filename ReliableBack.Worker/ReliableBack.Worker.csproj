@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-ReliableBack.Worker-e9666161-e435-4a22-afde-efa173d7608b</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,5 +15,11 @@
   <ItemGroup>
     <ProjectReference Include="..\ReliableBack.Infrastructure\ReliableBack.Infrastructure.csproj" />
     <ProjectReference Include="..\ReliableBack.Application\ReliableBack.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\.dockerignore">
+      <Link>.dockerignore</Link>
+    </Content>
   </ItemGroup>
 </Project>
