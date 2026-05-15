@@ -1,4 +1,8 @@
-﻿using System.Text.Json;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using MediatR;
 using ReliableBack.Application.Common.Interfaces;
 
@@ -15,14 +19,9 @@ public sealed class GetTaskListQueryHandler : IRequestHandler<GetTaskListQuery, 
 
     public async Task<IReadOnlyList<TaskDto>> Handle(GetTaskListQuery request, CancellationToken cancellationToken)
     {
-        var parameters = new GetTaskListParameters()
-        {
-            Status = request.Status,
-            Page = request.Page,
-            PageSize = request.PageSize,
-        };
-        
-        var tasks = await _taskRepository.GetAllAsync(parameters, cancellationToken);
+        var tasks = await _taskRepository.GetAllAsync(
+            new GetTaskListParameters(request.Status, request.Page, request.PageSize),
+            cancellationToken);
 
         return tasks
             .Select(task => new TaskDto(

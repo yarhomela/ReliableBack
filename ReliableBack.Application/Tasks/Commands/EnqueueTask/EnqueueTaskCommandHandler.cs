@@ -1,18 +1,18 @@
-﻿using MediatR;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using MediatR;
 using ReliableBack.Application.Common.Interfaces;
 using ReliableBack.Domain.Tasks;
 
 namespace ReliableBack.Application.Tasks.Commands.EnqueueTask;
 
-public sealed class EnqueueTaskCommandHandler
-    : IRequestHandler<EnqueueTaskCommand, Guid>
+public sealed class EnqueueTaskCommandHandler : IRequestHandler<EnqueueTaskCommand, Guid>
 {
     private readonly ITaskRepository _taskRepository;
     private readonly IMessagePublisher _messagePublisher;
 
-    public EnqueueTaskCommandHandler(
-        ITaskRepository taskRepository,
-        IMessagePublisher messagePublisher)
+    public EnqueueTaskCommandHandler(ITaskRepository taskRepository, IMessagePublisher messagePublisher)
     {
         _taskRepository = taskRepository;
         _messagePublisher = messagePublisher;
@@ -20,14 +20,13 @@ public sealed class EnqueueTaskCommandHandler
 
     public async Task<Guid> Handle(EnqueueTaskCommand request, CancellationToken cancellationToken)
     {
-        var task = new TaskItem
-        {
-            Type = request.Type,
-            Payload = request.Payload,
-            Priority = request.Priority,
-            MaxRetries = request.MaxRetries,
-            ScheduledAt = request.ScheduledAt
-        };
+        var task = new TaskItem(
+            type: request.Type,
+            payload: request.Payload,
+            priority: request.Priority,
+            maxRetries: request.MaxRetries,
+            scheduledAt: request.ScheduledAt);
+        
         await _taskRepository.AddAsync(task, cancellationToken);
         
         await _messagePublisher.PublishAsync(

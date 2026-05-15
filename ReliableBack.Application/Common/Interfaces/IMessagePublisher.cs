@@ -1,4 +1,7 @@
-﻿namespace ReliableBack.Application.Common.Interfaces;
+﻿using System.Threading;
+using System.Threading.Tasks;
+
+namespace ReliableBack.Application.Common.Interfaces;
 
 public interface IMessagePublisher
 {
