@@ -1,26 +1,81 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using RabbitMQ.Client;
 using ReliableBack.Application.Common.Interfaces;
+using ReliableBack.Infrastructure.Messaging.Settings;
 
 namespace ReliableBack.Infrastructure.Messaging;
 
-public class RabbitMqPublisher : IMessagePublisher
+public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
 {
     private readonly ILogger<RabbitMqPublisher> _logger;
+    private readonly RabbitMqSettings _settings;
+    private IConnection? _connection;
+    private IChannel? _channel;
 
-    public RabbitMqPublisher(ILogger<RabbitMqPublisher> logger)
+    public RabbitMqPublisher(IOptions<RabbitMqSettings> settings, ILogger<RabbitMqPublisher> logger)
     {
+        _settings = settings.Value;
         _logger = logger;
     }
     
-    public Task PublishAsync<T>(T message, string queueName, CancellationToken cancellationToken = default)
+    public async Task PublishAsync<T>(T message, string queueName, CancellationToken cancellationToken = default)
         where T : class
     {
-        // TODO: замінити на реальну публікацію в RabbitMQ
+        await EnsureConnectedAsync();
+
+        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+
+        var props = new BasicProperties
+        {
+            DeliveryMode = DeliveryModes.Persistent
+        };
+
+        await _channel!.BasicPublishAsync(
+            exchange: string.Empty,
+            routingKey: queueName,
+            mandatory: false,
+            basicProperties: props,
+            body: body,
+            cancellationToken: cancellationToken);
+
         _logger.LogInformation(
-            "Publishing message of type {MessageType} to queue {QueueName}",
+            "Message of type {MessageType} published to queue {QueueName}",
             typeof(T).Name,
             queueName);
+    }
+    
+    private async Task EnsureConnectedAsync()
+    {
+        if (_connection?.IsOpen == true && _channel?.IsOpen == true) return;
+        
+        var factory = new ConnectionFactory
+        {
+            HostName = _settings.Host,
+            Port     = _settings.Port,
+            UserName = _settings.Username,
+            Password = _settings.Password
+        };
 
-        return Task.CompletedTask;
+        _connection = await factory.CreateConnectionAsync();
+        _channel = await _connection.CreateChannelAsync();
+        
+        foreach (var queue in new[] { "tasks.high", "tasks.normal", "tasks.low" })
+        {
+            await _channel.QueueDeclareAsync(
+                queue:      queue,
+                durable:    true,
+                exclusive:  false,
+                autoDelete: false,
+                arguments:  null);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_channel is not null) await _channel.DisposeAsync();
+        if (_connection is not null) await _connection.DisposeAsync();
     }
 }

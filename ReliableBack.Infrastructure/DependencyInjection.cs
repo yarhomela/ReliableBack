@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ReliableBack.Application.Common.Interfaces;
 using ReliableBack.Infrastructure.Caching;
 using ReliableBack.Infrastructure.Messaging;
+using ReliableBack.Infrastructure.Messaging.Settings;
 using ReliableBack.Infrastructure.Persistence;
 using ReliableBack.Infrastructure.Persistence.Repositories;
 
@@ -25,6 +26,9 @@ public static class DependencyInjection
 
         services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
         services.AddScoped<ITaskCache, RedisTaskCache>();
+        
+        services.Configure<RabbitMqSettings>(configuration.GetSection("RabbitMQ"));
+        services.Configure<WorkerSettings>(configuration.GetSection("Worker"));
 
         return services;
     }
