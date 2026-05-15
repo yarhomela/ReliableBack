@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using ReliableBack.Application.Common;
 using ReliableBack.Application.Common.Interfaces;
 using ReliableBack.Domain.Tasks;
 using ReliableBack.Infrastructure.Messaging.Settings;
@@ -44,7 +45,7 @@ public class TaskWorkerService : BackgroundService
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        foreach (var queue in new[] { "tasks.high", "tasks.normal", "tasks.low" })
+        foreach (var queue in new[] { QueueNames.High, QueueNames.Normal, QueueNames.Low })
         {
             await ConsumeQueueAsync(queue, stoppingToken);
         }

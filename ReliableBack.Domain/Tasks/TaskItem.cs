@@ -59,11 +59,15 @@ public class TaskItem : Entity
         ErrorMessage = errorMessage;
         UpdatedAt = DateTime.UtcNow;
 
-        var newStatus = RetryCount >= MaxRetries
-            ? JobStatus.DeadLettered
-            : JobStatus.Retrying;
-
-        ChangeStatus(newStatus);
+        if (RetryCount >= MaxRetries)
+        {
+            ChangeStatus(JobStatus.DeadLettered);
+        }
+        else
+        {
+            ScheduleRetry();
+            ChangeStatus(JobStatus.Retrying);
+        }
     }
     
     public void MarkAsRunning() => ChangeStatus(JobStatus.Running);
@@ -71,4 +75,16 @@ public class TaskItem : Entity
     public void MarkAsCompleted() => ChangeStatus(JobStatus.Completed);
     
     public void MarkAsQueued() => ChangeStatus(JobStatus.Queued);
+    
+    public TimeSpan GetRetryDelay()
+    {
+        var seconds = 30 * Math.Pow(2, RetryCount - 1);
+        return TimeSpan.FromSeconds(Math.Min(seconds, 3600));
+    }
+    
+    public void ScheduleRetry()
+    {
+        ScheduledAt = DateTime.UtcNow.Add(GetRetryDelay());
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
