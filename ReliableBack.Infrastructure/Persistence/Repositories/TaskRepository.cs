@@ -55,4 +55,27 @@ public class TaskRepository : ITaskRepository
 
         return results.ToList();
     }
+    
+    public async Task<IReadOnlyList<TaskItem>> GetScheduledForRetryAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+
+        var results = await connection.QueryAsync<TaskItem>(
+            TaskQueries.GetScheduledForRetry,
+            new { Now = DateTime.UtcNow });
+
+        return results.ToList();
+    }
+
+    public async Task<IReadOnlyList<TaskItem>> GetStalledTasksAsync(TimeSpan stalledThreshold,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+
+        var results = await connection.QueryAsync<TaskItem>(
+            TaskQueries.GetStalledTasks,
+            new { StalledBefore = DateTime.UtcNow.Subtract(stalledThreshold) });
+
+        return results.ToList();
+    }
 }

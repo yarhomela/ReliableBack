@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
+using ReliableBack.Application.Common;
 using ReliableBack.Application.Common.Interfaces;
 using ReliableBack.Domain.Tasks;
 
@@ -31,18 +32,10 @@ public sealed class EnqueueTaskCommandHandler : IRequestHandler<EnqueueTaskComma
         
         await _messagePublisher.PublishAsync(
             message: task,
-            queueName: GetQueueName(request.Priority),
+            queueName: QueueNames.FromPriority(request.Priority),
             cancellationToken: cancellationToken
         );
 
         return task.Id;
     }
-
-    private static string GetQueueName(JobPriority priority) => priority switch
-    {
-        JobPriority.High   => "tasks.high",
-        JobPriority.Normal => "tasks.normal",
-        JobPriority.Low    => "tasks.low",
-        _                   => "tasks.normal"
-    };
 }

@@ -17,4 +17,9 @@ public interface ITaskRepository
     Task AddAsync(TaskItem task, CancellationToken cancellationToken = default);
     
     Task UpdateAsync(TaskItem task, CancellationToken cancellationToken = default);
+    
+    Task<IReadOnlyList<TaskItem>> GetScheduledForRetryAsync(CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TaskItem>> GetStalledTasksAsync(TimeSpan stalledThreshold, 
+        CancellationToken cancellationToken = default);
 }
