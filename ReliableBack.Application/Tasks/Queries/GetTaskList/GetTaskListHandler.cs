@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using System.Text.Json;
+using MediatR;
 using ReliableBack.Application.Common.Interfaces;
 
 namespace ReliableBack.Application.Tasks.Queries.GetTaskList;
@@ -27,7 +28,7 @@ public sealed class GetTaskListQueryHandler : IRequestHandler<GetTaskListQuery, 
             .Select(task => new TaskDto(
                 Id:           task.Id,
                 Type:         task.Type,
-                Payload:      task.Payload, // operate null
+                Payload:      task.Payload ?? JsonDocument.Parse("{}"),
                 Status:       task.Status,
                 Priority:     task.Priority,
                 RetryCount:   task.RetryCount,
