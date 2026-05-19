@@ -6,6 +6,7 @@ using RabbitMQ.Client.Events;
 using ReliableBack.Application.Common;
 using ReliableBack.Application.Common.Interfaces;
 using ReliableBack.Domain.Tasks;
+using ReliableBack.Infrastructure.Messaging;
 using ReliableBack.Infrastructure.Messaging.Settings;
 
 namespace ReliableBack.Worker;
@@ -174,6 +175,8 @@ public class TaskWorkerService : BackgroundService
 
         _connection = await factory.CreateConnectionAsync();
         _channel = await _connection.CreateChannelAsync();
+        
+        await RabbitMqInitializer.DeclareQueuesAsync(_channel);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)

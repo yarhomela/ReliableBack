@@ -62,15 +62,7 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
         _connection = await factory.CreateConnectionAsync();
         _channel = await _connection.CreateChannelAsync();
         
-        foreach (var queue in new[] { "tasks.high", "tasks.normal", "tasks.low" })
-        {
-            await _channel.QueueDeclareAsync(
-                queue:      queue,
-                durable:    true,
-                exclusive:  false,
-                autoDelete: false,
-                arguments:  null);
-        }
+        await RabbitMqInitializer.DeclareQueuesAsync(_channel);
     }
 
     public async ValueTask DisposeAsync()

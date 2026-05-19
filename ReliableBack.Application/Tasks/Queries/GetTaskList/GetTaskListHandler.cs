@@ -1,9 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using MediatR;
+﻿using MediatR;
 using ReliableBack.Application.Common.Interfaces;
 
 namespace ReliableBack.Application.Tasks.Queries.GetTaskList;
@@ -24,19 +19,7 @@ public sealed class GetTaskListQueryHandler : IRequestHandler<GetTaskListQuery, 
             cancellationToken);
 
         return tasks
-            .Select(task => new TaskDto(
-                Id:           task.Id,
-                Type:         task.Type,
-                Payload:      task.Payload ?? JsonDocument.Parse("{}"),
-                Status:       task.Status,
-                Priority:     task.Priority,
-                RetryCount:   task.RetryCount,
-                MaxRetries:   task.MaxRetries,
-                ErrorMessage: task.ErrorMessage,
-                ScheduledAt:  task.ScheduledAt,
-                CreatedAt:    task.CreatedAt,
-                UpdatedAt:    task.UpdatedAt
-            ))
+            .Select(TaskMapper.ToDto)
             .ToList();
     }
 }
