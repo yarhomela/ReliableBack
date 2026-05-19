@@ -24,16 +24,20 @@ public class TaskWorkerService : BackgroundService
     private IConnection? _connection;
     
     private IChannel? _channel;
+    
+    private readonly ITaskEventPublisher _eventPublisher;
 
     public TaskWorkerService(
         IServiceScopeFactory scopeFactory,
         IOptions<RabbitMqSettings> settings,
         IOptions<WorkerSettings> workerSettings,
+        ITaskEventPublisher eventPublisher,
         ILogger<TaskWorkerService> logger)
     {
         _scopeFactory = scopeFactory;
         _settings = settings.Value;
         _workerSettings = workerSettings.Value;
+        _eventPublisher =  eventPublisher;
         _logger = logger;
     }
     
@@ -90,7 +94,6 @@ public class TaskWorkerService : BackgroundService
             }
 
             taskId = taskItem.Id;
-            _logger.LogInformation("Processing task {TaskId} of type {TaskType}", taskId, taskItem.Type);
 
             using var scope = _scopeFactory.CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<ITaskRepository>();
@@ -101,18 +104,29 @@ public class TaskWorkerService : BackgroundService
                 await _channel!.BasicRejectAsync(ea.DeliveryTag, requeue: false);
                 return;
             }
-
+            
             task.MarkAsRunning();
             await repository.UpdateAsync(task, cancellationToken);
+            await _eventPublisher.PublishStatusChangedAsync(
+                task.Id,
+                JobStatus.Queued,
+                JobStatus.Running,
+                cancellationToken);
             
             await SimulateWorkAsync(task, cancellationToken); // TODO: тут буде виклик реального обробника задачі
 
             task.MarkAsCompleted();
             await repository.UpdateAsync(task, cancellationToken);
             
+            await _eventPublisher.PublishStatusChangedAsync(
+                task.Id,
+                JobStatus.Running,
+                JobStatus.Completed,
+                cancellationToken);
+
             await _channel!.BasicAckAsync(ea.DeliveryTag, multiple: false);
 
-            _logger.LogInformation("Task {TaskId} completed successfully", taskId);
+            _logger.LogInformation("Task {TaskId} completed", taskId);
         }
         catch (Exception ex)
         {

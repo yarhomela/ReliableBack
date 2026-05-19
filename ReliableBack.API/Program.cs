@@ -1,3 +1,4 @@
+using ReliableBack.API.Hubs;
 using ReliableBack.API.Middleware;
 using ReliableBack.Application;
 using ReliableBack.Infrastructure;
@@ -17,9 +18,21 @@ try
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+    builder.Services.AddSignalR();
     
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddHostedService<TaskStatusBroadcaster>();
+    
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("Dashboard", policy =>
+            policy
+                .WithOrigins("http://localhost:4200")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials());
+    });
 
     var app = builder.Build();
 
@@ -32,7 +45,9 @@ try
     }
 
     app.UseHttpsRedirection();
+    app.UseCors("Dashboard");
     app.UseAuthorization();
+    app.MapHub<TaskStatusHub>("/hubs/tasks");
     app.MapControllers();
 
     app.Run();
