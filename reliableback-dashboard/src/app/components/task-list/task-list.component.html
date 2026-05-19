@@ -1,0 +1,43 @@
+<div class="container">
+  <h2>ReliableBack — Live Task Monitor</h2>
+
+  <div class="updates-list">
+    @if (updates$ | async; as updates) {
+      @if (updates.length === 0) {
+        <div class="empty-state">
+          Waiting for task updates...
+        </div>
+      } @else {
+        @for (update of updates; track update.taskId) {
+          <div class="update-card">
+
+            <div class="task-id">
+              {{ update.taskId.slice(0, 8) }}...
+            </div>
+
+            <div class="status-flow">
+              <span
+                class="status-badge"
+                [style.background]="getStatusColor(update.previousStatus)">
+                {{ update.previousStatus }}
+              </span>
+
+              <span class="arrow">→</span>
+
+              <span
+                class="status-badge"
+                [style.background]="getStatusColor(update.newStatus)">
+                {{ update.newStatus }}
+              </span>
+            </div>
+
+            <div class="occurred-at">
+              {{ formatTime(update.occurredAt) }}
+            </div>
+
+          </div>
+        }
+      }
+    }
+  </div>
+</div>
