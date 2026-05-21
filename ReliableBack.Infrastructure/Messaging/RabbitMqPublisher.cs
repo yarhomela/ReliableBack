@@ -1,7 +1,10 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
 using RabbitMQ.Client;
 using ReliableBack.Application.Common.Interfaces;
 using ReliableBack.Infrastructure.Messaging.Settings;
@@ -20,7 +23,7 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
         _settings = settings.Value;
         _logger = logger;
     }
-    
+
     public async Task PublishAsync<T>(T message, string queueName, CancellationToken cancellationToken = default)
         where T : class
     {
@@ -30,8 +33,18 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
 
         var props = new BasicProperties
         {
-            DeliveryMode = DeliveryModes.Persistent
+            DeliveryMode = DeliveryModes.Persistent,
+            Headers = new Dictionary<string, object?>()
         };
+
+        var propagator = Propagators.DefaultTextMapPropagator;
+        propagator.Inject(
+            new PropagationContext(
+                Activity.Current?.Context ?? default,
+                Baggage.Current),
+            props.Headers,
+            (headers, key, value) =>
+                headers[key] = Encoding.UTF8.GetBytes(value));
 
         await _channel!.BasicPublishAsync(
             exchange: string.Empty,
@@ -46,31 +59,23 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
             typeof(T).Name,
             queueName);
     }
-    
+
     private async Task EnsureConnectedAsync()
     {
         if (_connection?.IsOpen == true && _channel?.IsOpen == true) return;
-        
+
         var factory = new ConnectionFactory
         {
             HostName = _settings.Host,
-            Port     = _settings.Port,
+            Port = _settings.Port,
             UserName = _settings.Username,
             Password = _settings.Password
         };
 
         _connection = await factory.CreateConnectionAsync();
         _channel = await _connection.CreateChannelAsync();
-        
-        foreach (var queue in new[] { "tasks.high", "tasks.normal", "tasks.low" })
-        {
-            await _channel.QueueDeclareAsync(
-                queue:      queue,
-                durable:    true,
-                exclusive:  false,
-                autoDelete: false,
-                arguments:  null);
-        }
+
+        await RabbitMqInitializer.DeclareQueuesAsync(_channel);
     }
 
     public async ValueTask DisposeAsync()

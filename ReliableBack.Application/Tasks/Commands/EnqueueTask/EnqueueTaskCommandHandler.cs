@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using MediatR;
 using ReliableBack.Application.Common;
 using ReliableBack.Application.Common.Interfaces;
@@ -10,6 +8,9 @@ namespace ReliableBack.Application.Tasks.Commands.EnqueueTask;
 
 public sealed class EnqueueTaskCommandHandler : IRequestHandler<EnqueueTaskCommand, Guid>
 {
+    private static readonly ActivitySource ActivitySource =
+        new("ReliableBack.API");
+    
     private readonly ITaskRepository _taskRepository;
     private readonly IMessagePublisher _messagePublisher;
 
@@ -21,12 +22,18 @@ public sealed class EnqueueTaskCommandHandler : IRequestHandler<EnqueueTaskComma
 
     public async Task<Guid> Handle(EnqueueTaskCommand request, CancellationToken cancellationToken)
     {
+        using var activity = ActivitySource.StartActivity("task.enqueue");
+        
         var task = new TaskItem(
             type: request.Type,
             payload: request.Payload,
             priority: request.Priority,
             maxRetries: request.MaxRetries,
             scheduledAt: request.ScheduledAt);
+        
+        activity?.SetTag("task.id",       task.Id.ToString());
+        activity?.SetTag("task.type",     task.Type);
+        activity?.SetTag("task.priority", task.Priority.ToString());
         
         await _taskRepository.AddAsync(task, cancellationToken);
         
@@ -35,6 +42,8 @@ public sealed class EnqueueTaskCommandHandler : IRequestHandler<EnqueueTaskComma
             queueName: QueueNames.FromPriority(request.Priority),
             cancellationToken: cancellationToken
         );
+        
+        activity?.SetTag("task.status", "enqueued");
 
         return task.Id;
     }

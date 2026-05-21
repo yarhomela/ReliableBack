@@ -76,15 +76,15 @@ public class TaskItem : Entity
     
     public void MarkAsQueued() => ChangeStatus(JobStatus.Queued);
     
-    public TimeSpan GetRetryDelay()
+    public TimeSpan GetRetryDelay(int baseDelaySeconds = 30)
     {
-        var seconds = 30 * Math.Pow(2, RetryCount - 1);
+        var seconds = baseDelaySeconds * Math.Pow(2, RetryCount - 1);
         return TimeSpan.FromSeconds(Math.Min(seconds, 3600));
     }
     
-    public void ScheduleRetry()
+    public void ScheduleRetry(int baseDelaySeconds = 30)
     {
-        ScheduledAt = DateTime.UtcNow.Add(GetRetryDelay());
+        ScheduledAt = DateTime.UtcNow.Add(GetRetryDelay(baseDelaySeconds));
         UpdatedAt = DateTime.UtcNow;
     }
 }

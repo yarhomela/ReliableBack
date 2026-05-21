@@ -1,6 +1,11 @@
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using RabbitMQ.Client;
+using ReliableBack.API.Hubs;
 using ReliableBack.API.Middleware;
 using ReliableBack.Application;
 using ReliableBack.Infrastructure;
+using ReliableBack.Infrastructure.Telemetry;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -17,12 +22,71 @@ try
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
-    
+    builder.Services.AddSignalR();
+
     builder.Services.AddApplication();
+
+    builder.Services.AddOpenTelemetry()
+        .WithTracing(tracing => tracing
+            .SetResourceBuilder(ResourceBuilder
+                .CreateDefault()
+                .AddService(TelemetryConstants.ApiServiceName))
+            .AddAspNetCoreInstrumentation(options =>
+            {
+                options.Filter = ctx =>
+                    !ctx.Request.Path.StartsWithSegments("/health");
+            })
+            .AddHttpClientInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation()
+            .AddSource(TelemetryConstants.ApiActivitySource)
+            .AddJaegerExporter(options =>
+            {
+                options.AgentHost = builder.Configuration
+                    .GetValue<string>("Jaeger:Host") ?? "localhost";
+                options.AgentPort = builder.Configuration
+                    .GetValue("Jaeger:Port", 6831);
+            }));
+
     builder.Services.AddInfrastructure(builder.Configuration);
+
+    builder.Services.AddSingleton<IConnectionFactory>(sp =>
+        new ConnectionFactory
+        {
+            HostName = builder.Configuration["RabbitMQ:Host"],
+            Port = builder.Configuration.GetValue<int>("RabbitMQ:Port"),
+            UserName = builder.Configuration["RabbitMQ:Username"],
+            Password = builder.Configuration["RabbitMQ:Password"]
+        });
+
+    builder.Services
+        .AddHealthChecks()
+        .AddNpgSql(
+            builder.Configuration.GetConnectionString("PostgreSQL")!,
+            name: "postgres",
+            tags: new[] { "infrastructure" })
+        .AddRabbitMQ(
+            name: "rabbitmq",
+            tags: new[] { "infrastructure" })
+        .AddRedis(
+            builder.Configuration["Redis:ConnectionString"]!,
+            name: "redis",
+            tags: new[] { "infrastructure" });
+
+    builder.Services.AddHostedService<TaskStatusBroadcaster>();
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("Dashboard", policy =>
+            policy
+                .WithOrigins("http://localhost:4200")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials());
+    });
 
     var app = builder.Build();
 
+    app.UseMiddleware<CorrelationIdMiddleware>();
     app.UseMiddleware<ExceptionHandlerMiddleware>();
 
     if (app.Environment.IsDevelopment())
@@ -32,8 +96,16 @@ try
     }
 
     app.UseHttpsRedirection();
+    app.UseCors("Dashboard");
     app.UseAuthorization();
+    app.MapHub<TaskStatusHub>("/hubs/tasks");
     app.MapControllers();
+
+    app.MapHealthChecks("/health");
+    app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("infrastructure")
+    });
 
     app.Run();
 }

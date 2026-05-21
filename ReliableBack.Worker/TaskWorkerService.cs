@@ -1,80 +1,106 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
+using OpenTelemetry.Trace;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using ReliableBack.Application.Common;
 using ReliableBack.Application.Common.Interfaces;
 using ReliableBack.Domain.Tasks;
+using ReliableBack.Infrastructure.Messaging;
 using ReliableBack.Infrastructure.Messaging.Settings;
 
 namespace ReliableBack.Worker;
 
 public class TaskWorkerService : BackgroundService
 {
+    private static readonly ActivitySource ActivitySource = new("ReliableBack.Worker");
+
     private readonly IServiceScopeFactory _scopeFactory;
-    
+
     private readonly RabbitMqSettings _settings;
-    
+
     private readonly WorkerSettings _workerSettings;
-    
+
     private readonly ILogger<TaskWorkerService> _logger;
-    
+
     private IConnection? _connection;
-    
+
     private IChannel? _channel;
+
+    private readonly ITaskEventPublisher _eventPublisher;
 
     public TaskWorkerService(
         IServiceScopeFactory scopeFactory,
         IOptions<RabbitMqSettings> settings,
         IOptions<WorkerSettings> workerSettings,
+        ITaskEventPublisher eventPublisher,
         ILogger<TaskWorkerService> logger)
     {
         _scopeFactory = scopeFactory;
         _settings = settings.Value;
         _workerSettings = workerSettings.Value;
+        _eventPublisher = eventPublisher;
         _logger = logger;
     }
-    
+
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
         await ConnectToRabbitMqAsync();
         await base.StartAsync(cancellationToken);
         _logger.LogInformation("TaskWorkerService started");
     }
-    
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         foreach (var queue in new[] { QueueNames.High, QueueNames.Normal, QueueNames.Low })
         {
             await ConsumeQueueAsync(queue, stoppingToken);
         }
-        
+
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
-    
+
     private async Task ConsumeQueueAsync(string queueName, CancellationToken stoppingToken)
     {
         await _channel!.BasicQosAsync(
-            prefetchSize:  0,
+            prefetchSize: 0,
             prefetchCount: (ushort)_workerSettings.MaxConcurrentTasks,
-            global:        false);
+            global: false);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
-        consumer.ReceivedAsync += async (_, ea) =>
-        {
-            await ProcessMessageAsync(ea, stoppingToken);
-        };
+        consumer.ReceivedAsync += async (_, ea) => { await ProcessMessageAsync(ea, stoppingToken); };
 
         await _channel.BasicConsumeAsync(
-            queue:       queueName,
-            autoAck:     false,  // підтверджуємо вручну після успішної обробки
-            consumer:    consumer);
+            queue: queueName,
+            autoAck: false, // підтверджуємо вручну після успішної обробки
+            consumer: consumer);
     }
-    
+
     private async Task ProcessMessageAsync(BasicDeliverEventArgs ea, CancellationToken cancellationToken)
     {
+        var propagator    = Propagators.DefaultTextMapPropagator;
+        var parentContext = propagator.Extract(
+            default,
+            ea.BasicProperties.Headers,
+            (headers, key) =>
+            {
+                if (headers.TryGetValue(key, out var value) && value is byte[] bytes)
+                    return new[] { Encoding.UTF8.GetString(bytes) };
+                return Enumerable.Empty<string>();
+            });
+
+        Baggage.Current = parentContext.Baggage;
+        
+        using var activity = ActivitySource.StartActivity(
+            "rabbitmq.consume",
+            ActivityKind.Consumer,
+            parentContext.ActivityContext);
+        
         var taskId = Guid.Empty;
 
         try
@@ -84,12 +110,15 @@ public class TaskWorkerService : BackgroundService
 
             if (taskItem is null)
             {
+                activity?.SetStatus(ActivityStatusCode.Error, "Failed to deserialize message");
                 await _channel!.BasicRejectAsync(ea.DeliveryTag, requeue: false);
                 return;
             }
 
             taskId = taskItem.Id;
-            _logger.LogInformation("Processing task {TaskId} of type {TaskType}", taskId, taskItem.Type);
+
+            activity?.SetTag("task.id", taskId.ToString());
+            activity?.SetTag("task.type", taskItem.Type);
 
             using var scope = _scopeFactory.CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<ITaskRepository>();
@@ -97,29 +126,55 @@ public class TaskWorkerService : BackgroundService
             var task = await repository.GetByIdAsync(taskId, cancellationToken);
             if (task is null)
             {
+                activity?.SetStatus(ActivityStatusCode.Error, "Task not found in database");
                 await _channel!.BasicRejectAsync(ea.DeliveryTag, requeue: false);
                 return;
             }
 
-            task.MarkAsRunning();
-            await repository.UpdateAsync(task, cancellationToken);
-            
-            await SimulateWorkAsync(task, cancellationToken); // TODO: тут буде виклик реального обробника задачі
+            using (var processActivity = ActivitySource.StartActivity("task.process"))
+            {
+                processActivity?.SetTag("task.id", task.Id.ToString());
+                processActivity?.SetTag("task.type", task.Type);
+                processActivity?.SetTag("task.retry_count", task.RetryCount);
 
-            task.MarkAsCompleted();
-            await repository.UpdateAsync(task, cancellationToken);
-            
+                task.MarkAsRunning();
+                await repository.UpdateAsync(task, cancellationToken);
+
+                await _eventPublisher.PublishStatusChangedAsync(
+                    task.Id,
+                    JobStatus.Queued,
+                    JobStatus.Running,
+                    cancellationToken);
+
+                await SimulateWorkAsync(task, cancellationToken);
+
+                task.MarkAsCompleted();
+                await repository.UpdateAsync(task, cancellationToken);
+
+                await _eventPublisher.PublishStatusChangedAsync(
+                    task.Id,
+                    JobStatus.Running,
+                    JobStatus.Completed,
+                    cancellationToken);
+
+                processActivity?.SetTag("task.status", "completed");
+            }
+
             await _channel!.BasicAckAsync(ea.DeliveryTag, multiple: false);
 
-            _logger.LogInformation("Task {TaskId} completed successfully", taskId);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            _logger.LogInformation("Task {TaskId} completed", taskId);
         }
         catch (Exception ex)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.RecordException(ex);
+            
             _logger.LogError(ex, "Failed to process task {TaskId}", taskId);
             await HandleFailureAsync(ea, taskId, ex.Message, cancellationToken);
         }
     }
-    
+
     private async Task HandleFailureAsync(
         BasicDeliverEventArgs ea,
         Guid taskId,
@@ -146,7 +201,7 @@ public class TaskWorkerService : BackgroundService
                 {
                     await _channel!.BasicNackAsync(ea.DeliveryTag,
                         multiple: false,
-                        requeue:  true);
+                        requeue: true);
                 }
             }
         }
@@ -167,13 +222,15 @@ public class TaskWorkerService : BackgroundService
         var factory = new ConnectionFactory
         {
             HostName = _settings.Host,
-            Port     = _settings.Port,
+            Port = _settings.Port,
             UserName = _settings.Username,
             Password = _settings.Password
         };
 
         _connection = await factory.CreateConnectionAsync();
         _channel = await _connection.CreateChannelAsync();
+
+        await RabbitMqInitializer.DeclareQueuesAsync(_channel);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
