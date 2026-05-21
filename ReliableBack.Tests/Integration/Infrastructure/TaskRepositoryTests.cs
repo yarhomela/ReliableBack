@@ -5,6 +5,7 @@ using ReliableBack.Tests.Common.Fixtures;
 
 namespace ReliableBack.Tests.Integration.Infrastructure;
 
+[Trait("Category", "Integration")]
 public class TaskRepositoryTests : IClassFixture<PostgreSqlFixture>
 {
     private readonly PostgreSqlFixture _fixture;
