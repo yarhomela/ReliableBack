@@ -5,6 +5,7 @@ using ReliableBack.Tests.Common.Builders;
 
 namespace ReliableBack.Tests.Unit.Domain;
 
+[Trait("Category", "Unit")]
 public class TaskItemTests
 {
     [Fact]

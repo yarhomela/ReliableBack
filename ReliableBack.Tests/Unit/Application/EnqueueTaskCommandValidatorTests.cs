@@ -5,6 +5,7 @@ using ReliableBack.Domain.Tasks;
 
 namespace ReliableBack.Tests.Unit.Application;
 
+[Trait("Category", "Unit")]
 public class EnqueueTaskCommandValidatorTests
 {
     private readonly EnqueueTaskCommandValidator _validator = new();

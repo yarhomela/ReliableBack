@@ -7,6 +7,7 @@ using ReliableBack.Domain.Tasks;
 
 namespace ReliableBack.Tests.Unit.Application;
 
+[Trait("Category", "Unit")]
 public class EnqueueTaskCommandHandlerTests
 {
     private readonly ITaskRepository _repository;
