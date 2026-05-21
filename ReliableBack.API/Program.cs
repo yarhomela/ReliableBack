@@ -1,3 +1,4 @@
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using RabbitMQ.Client;
@@ -45,7 +46,16 @@ try
                     .GetValue<string>("Jaeger:Host") ?? "localhost";
                 options.AgentPort = builder.Configuration
                     .GetValue("Jaeger:Port", 6831);
-            }));
+            }))
+        .WithMetrics(metrics => metrics
+            .SetResourceBuilder(ResourceBuilder
+                .CreateDefault()
+                .AddService(TelemetryConstants.ApiServiceName))
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddMeter("ReliableBack")
+            .AddPrometheusExporter());
 
     builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -100,6 +110,7 @@ try
     app.UseAuthorization();
     app.MapHub<TaskStatusHub>("/hubs/tasks");
     app.MapControllers();
+    app.MapPrometheusScrapingEndpoint("/metrics");
 
     app.MapHealthChecks("/health");
     app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions

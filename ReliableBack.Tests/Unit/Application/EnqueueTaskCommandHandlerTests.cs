@@ -2,6 +2,7 @@
 using FluentAssertions;
 using NSubstitute;
 using ReliableBack.Application.Common.Interfaces;
+using ReliableBack.Application.Common.Telemetry;
 using ReliableBack.Application.Tasks.Commands.EnqueueTask;
 using ReliableBack.Domain.Tasks;
 
@@ -18,7 +19,8 @@ public class EnqueueTaskCommandHandlerTests
     {
         _repository = Substitute.For<ITaskRepository>();
         _publisher  = Substitute.For<IMessagePublisher>();
-        _handler    = new EnqueueTaskCommandHandler(_repository, _publisher);
+        var metrics = Substitute.For<TaskMetrics>();
+        _handler    = new EnqueueTaskCommandHandler(_repository, _publisher, metrics);
     }
 
     [Fact]

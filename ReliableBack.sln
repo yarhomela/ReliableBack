@@ -18,6 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		docker-compose.yml = docker-compose.yml
 		README.md = README.md
 		.editorconfig.ini = .editorconfig.ini
+		prometheus.yml = prometheus.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{B0237C42-74C9-4260-BD1E-10740227DD3E}"
@@ -26,6 +27,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 	ProjectSection(SolutionItems) = preProject
 		ci.yml = ci.yml
 		pr-check.yml = pr-check.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "grafana", "grafana", "{3E9A453E-1EC2-4978-909C-04B0FE378EC2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "provisioning", "provisioning", "{B5C65109-AD0E-4E75-B61C-9358FE9295C7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "datasources", "datasources", "{EC277CF0-0ECF-40A5-A664-3CFFE9B4CCA0}"
+	ProjectSection(SolutionItems) = preProject
+		prometheus.yml = prometheus.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dashboards", "dashboards", "{3A17B9AF-135F-4DF8-AE66-F57FBA008FD8}"
+	ProjectSection(SolutionItems) = preProject
+		dashboard.yml = dashboard.yml
+		reliableback.json = reliableback.json
 	EndProjectSection
 EndProject
 Global
@@ -62,5 +78,9 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{B0237C42-74C9-4260-BD1E-10740227DD3E} = {678A500E-4D99-4341-980B-B9ED6168A464}
 		{B542372E-C918-4E2E-A367-8FB9F6E6149A} = {B0237C42-74C9-4260-BD1E-10740227DD3E}
+		{3E9A453E-1EC2-4978-909C-04B0FE378EC2} = {678A500E-4D99-4341-980B-B9ED6168A464}
+		{B5C65109-AD0E-4E75-B61C-9358FE9295C7} = {3E9A453E-1EC2-4978-909C-04B0FE378EC2}
+		{EC277CF0-0ECF-40A5-A664-3CFFE9B4CCA0} = {B5C65109-AD0E-4E75-B61C-9358FE9295C7}
+		{3A17B9AF-135F-4DF8-AE66-F57FBA008FD8} = {B5C65109-AD0E-4E75-B61C-9358FE9295C7}
 	EndGlobalSection
 EndGlobal
