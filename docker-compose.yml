@@ -38,5 +38,30 @@
       - "4318:4318"     # OTLP HTTP
       - "6831:6831/udp" # Jaeger Thrift UDP
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: reliableback_prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"   # UI Prometheus — 9090 може бути зайнятий
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: reliableback_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+
 volumes:
   postgres_data:
+  grafana_data: 

@@ -9,6 +9,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using ReliableBack.Application.Common;
 using ReliableBack.Application.Common.Interfaces;
+using ReliableBack.Application.Common.Telemetry;
 using ReliableBack.Domain.Tasks;
 using ReliableBack.Infrastructure.Messaging;
 using ReliableBack.Infrastructure.Messaging.Settings;
@@ -32,19 +33,22 @@ public class TaskWorkerService : BackgroundService
     private IChannel? _channel;
 
     private readonly ITaskEventPublisher _eventPublisher;
+    
+    private readonly TaskMetrics _metrics;
 
     public TaskWorkerService(
         IServiceScopeFactory scopeFactory,
         IOptions<RabbitMqSettings> settings,
         IOptions<WorkerSettings> workerSettings,
         ITaskEventPublisher eventPublisher,
-        ILogger<TaskWorkerService> logger)
+        ILogger<TaskWorkerService> logger, TaskMetrics metrics)
     {
         _scopeFactory = scopeFactory;
         _settings = settings.Value;
         _workerSettings = workerSettings.Value;
         _eventPublisher = eventPublisher;
         _logger = logger;
+        _metrics = metrics;
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
@@ -83,6 +87,8 @@ public class TaskWorkerService : BackgroundService
 
     private async Task ProcessMessageAsync(BasicDeliverEventArgs ea, CancellationToken cancellationToken)
     {
+        var startTime = Stopwatch.GetTimestamp();
+        
         var propagator    = Propagators.DefaultTextMapPropagator;
         var parentContext = propagator.Extract(
             default,
@@ -130,6 +136,8 @@ public class TaskWorkerService : BackgroundService
                 await _channel!.BasicRejectAsync(ea.DeliveryTag, requeue: false);
                 return;
             }
+            
+            _metrics.RecordTaskStarted(task.Type);
 
             using (var processActivity = ActivitySource.StartActivity("task.process"))
             {
@@ -159,11 +167,15 @@ public class TaskWorkerService : BackgroundService
 
                 processActivity?.SetTag("task.status", "completed");
             }
+            
+            var duration = Stopwatch.GetElapsedTime(startTime).TotalSeconds;
+            _metrics.RecordTaskCompleted(task.Type, duration);
 
             await _channel!.BasicAckAsync(ea.DeliveryTag, multiple: false);
 
             activity?.SetStatus(ActivityStatusCode.Ok);
-            _logger.LogInformation("Task {TaskId} completed", taskId);
+            _logger.LogInformation("Task {TaskId} completed in {Duration:F2}s",
+                taskId, duration);
         }
         catch (Exception ex)
         {

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Builder;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using ReliableBack.Application;
@@ -25,7 +27,24 @@ builder.Services.AddOpenTelemetry()
                 .GetValue<string>("Jaeger:Host") ?? "localhost";
             options.AgentPort = builder.Configuration
                 .GetValue("Jaeger:Port", 6831);
-        }));
+        }))
+    .WithMetrics(metrics => metrics
+        .SetResourceBuilder(ResourceBuilder
+            .CreateDefault()
+            .AddService(TelemetryConstants.WorkerServiceName))
+        .AddRuntimeInstrumentation()
+        .AddMeter("ReliableBack")
+        .AddPrometheusExporter());
+
+var webBuilder = WebApplication.CreateBuilder(args);
+webBuilder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics => metrics
+        .AddPrometheusExporter());
+
+var webApp = webBuilder.Build();
+webApp.MapPrometheusScrapingEndpoint("/metrics");
 
 var host = builder.Build();
-host.Run();
+await Task.WhenAll(
+    host.RunAsync(),
+    webApp.RunAsync("http://localhost:9090"));

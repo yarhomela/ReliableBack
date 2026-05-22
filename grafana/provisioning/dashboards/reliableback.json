@@ -1,0 +1,61 @@
+﻿{
+  "title": "ReliableBack Dashboard",
+  "panels": [
+    {
+      "title": "Tasks Enqueued (rate)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "rate(reliableback_tasks_enqueued_total[5m])",
+        "legendFormat": "{{task_type}}"
+      }]
+    },
+    {
+      "title": "Tasks Completed (rate)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "rate(reliableback_tasks_completed_total[5m])",
+        "legendFormat": "{{task_type}}"
+      }]
+    },
+    {
+      "title": "Tasks Failed (rate)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "rate(reliableback_tasks_failed_total[5m])",
+        "legendFormat": "{{task_type}}"
+      }]
+    },
+    {
+      "title": "Dead Lettered Total",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "reliableback_tasks_dead_lettered_total",
+        "legendFormat": "{{task_type}}"
+      }]
+    },
+    {
+      "title": "Processing Duration (p95)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [{
+        "expr": "histogram_quantile(0.95, rate(reliableback_task_processing_duration_seconds_bucket[5m]))",
+        "legendFormat": "p95 {{task_type}}"
+      }]
+    },
+    {
+      "title": "Tasks Currently Running",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "targets": [{
+        "expr": "reliableback_tasks_running",
+        "legendFormat": "{{task_type}}"
+      }]
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "10s"
+}

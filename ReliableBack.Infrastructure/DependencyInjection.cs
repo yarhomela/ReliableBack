@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReliableBack.Application.Common.Interfaces;
+using ReliableBack.Application.Common.Telemetry;
 using ReliableBack.Infrastructure.Caching;
 using ReliableBack.Infrastructure.Messaging;
 using ReliableBack.Infrastructure.Messaging.Settings;
@@ -39,6 +40,7 @@ public static class DependencyInjection
 
         services.AddScoped<ITaskEventPublisher, RedisPubSubPublisher>();
         services.AddSingleton<ITaskEventSubscriber, RedisPubSubSubscriber>();
+        services.AddSingleton<TaskMetrics>();
 
         services.Configure<RedisSettings>(
             configuration.GetSection("Redis"));

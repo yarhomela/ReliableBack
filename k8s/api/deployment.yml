@@ -1,0 +1,43 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reliableback-api
+  namespace: reliableback
+spec:
+  replicas: 2        # два інстанси для горизонтального скейлінгу
+  selector:
+    matchLabels:
+      app: reliableback-api
+  template:
+    metadata:
+      labels:
+        app: reliableback-api
+    spec:
+      containers:
+        - name: api
+          image: reliableback-api:latest
+          imagePullPolicy: Never   # для minikube — образ локальний
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: reliableback-config
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds:       5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds:       10
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu:    "250m"
+            limits:
+              memory: "512Mi"
+              cpu:    "500m"
