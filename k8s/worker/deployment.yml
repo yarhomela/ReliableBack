@@ -1,0 +1,29 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reliableback-worker
+  namespace: reliableback
+spec:
+  replicas: 3        # три інстанси воркера — горизонтальне скейлювання
+  selector:
+    matchLabels:
+      app: reliableback-worker
+  template:
+    metadata:
+      labels:
+        app: reliableback-worker
+    spec:
+      containers:
+        - name: worker
+          image: reliableback-worker:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: reliableback-config
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu:    "100m"
+            limits:
+              memory: "256Mi"
+              cpu:    "250m"

@@ -1,9 +1,0 @@
-﻿apiVersion: 1
-
-providers:
-  - name: ReliableBack
-    folder: ReliableBack
-    type: file
-    disableDeletion: false
-    options:
-      path: /etc/grafana/provisioning/dashboards
