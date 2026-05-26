@@ -1,5 +1,5 @@
 ﻿# ReliableBack
-#v 1.8.0
+#v 1.9.0
 
 ![CI](https://github.com/yarhomela/ReliableBack/actions/workflows/ci.yml/badge.svg)
 ![Tests](https://img.shields.io/github/actions/workflow/status/yarhomela/ReliableBack/ci.yml?label=tests)
