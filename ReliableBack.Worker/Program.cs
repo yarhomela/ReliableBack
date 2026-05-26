@@ -1,50 +1,32 @@
 using Microsoft.AspNetCore.Builder;
 using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using ReliableBack.Application;
 using ReliableBack.Infrastructure;
-using ReliableBack.Infrastructure.Telemetry;
+using ReliableBack.Infrastructure.Configuration;
+using ReliableBack.Infrastructure.Messaging.Settings;
 using ReliableBack.Worker;
+using ReliableBack.Worker.Extensions;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddHostedService<TaskWorkerService>();
-builder.Services.AddHostedService<WatchdogService>();
-
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing
-        .SetResourceBuilder(ResourceBuilder
-            .CreateDefault()
-            .AddService(TelemetryConstants.WorkerServiceName))
-        .AddHttpClientInstrumentation()
-        .AddSource(TelemetryConstants.WorkerActivitySource)
-        .AddJaegerExporter(options =>
-        {
-            options.AgentHost = builder.Configuration
-                .GetValue<string>("Jaeger:Host") ?? "localhost";
-            options.AgentPort = builder.Configuration
-                .GetValue("Jaeger:Port", 6831);
-        }))
-    .WithMetrics(metrics => metrics
-        .SetResourceBuilder(ResourceBuilder
-            .CreateDefault()
-            .AddService(TelemetryConstants.WorkerServiceName))
-        .AddRuntimeInstrumentation()
-        .AddMeter("ReliableBack")
-        .AddPrometheusExporter());
+builder.Services
+    .AddApplication()
+    .AddInfrastructure(builder.Configuration)
+    .AddWorkerObservability(builder.Configuration)
+    .AddHostedService<TaskWorkerService>()
+    .AddHostedService<WatchdogService>();
 
 var webBuilder = WebApplication.CreateBuilder(args);
 webBuilder.Services.AddOpenTelemetry()
     .WithMetrics(metrics => metrics
+        .AddMeter("ReliableBack")
         .AddPrometheusExporter());
 
-var webApp = webBuilder.Build();
-webApp.MapPrometheusScrapingEndpoint("/metrics");
+var metricsApp = webBuilder.Build();
+metricsApp.MapPrometheusScrapingEndpoint("/metrics");
 
 var host = builder.Build();
-await Task.WhenAll(
-    host.RunAsync(),
-    webApp.RunAsync("http://localhost:9090"));
+
+var metricsSettings = builder.Configuration.GetRequiredSettings<MetricsSettings>("Metrics");
+
+await Task.WhenAll(host.RunAsync(), metricsApp.RunAsync(metricsSettings.Url));

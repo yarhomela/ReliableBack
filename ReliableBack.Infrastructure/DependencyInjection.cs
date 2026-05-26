@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ReliableBack.Application.Common.Interfaces;
 using ReliableBack.Application.Common.Telemetry;
 using ReliableBack.Infrastructure.Caching;
+using ReliableBack.Infrastructure.Configuration;
 using ReliableBack.Infrastructure.Messaging;
 using ReliableBack.Infrastructure.Messaging.Settings;
 using ReliableBack.Infrastructure.Persistence;
@@ -32,18 +33,14 @@ public static class DependencyInjection
         services.Configure<RabbitMqSettings>(configuration.GetSection("RabbitMQ"));
         services.Configure<WorkerSettings>(configuration.GetSection("Worker"));
         
-        var redisConnectionString = configuration.GetSection("Redis")["ConnectionString"] 
-                                    ?? throw new InvalidOperationException("Redis connection string is not configured.");
+        var redisSettings = configuration.GetRequiredSettings<RedisSettings>("Redis");
 
         services.AddSingleton<IConnectionMultiplexer>(
-            ConnectionMultiplexer.Connect(redisConnectionString));
+            ConnectionMultiplexer.Connect(redisSettings.ConnectionString));
 
         services.AddScoped<ITaskEventPublisher, RedisPubSubPublisher>();
         services.AddSingleton<ITaskEventSubscriber, RedisPubSubSubscriber>();
         services.AddSingleton<TaskMetrics>();
-
-        services.Configure<RedisSettings>(
-            configuration.GetSection("Redis"));
 
         return services;
     }
