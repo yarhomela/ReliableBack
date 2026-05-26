@@ -84,11 +84,16 @@ try
 
     builder.Services.AddHostedService<TaskStatusBroadcaster>();
 
+    var allowedOrigins = builder.Configuration
+                             .GetSection("Cors:AllowedOrigins")
+                             .Get<string[]>()
+                         ?? Array.Empty<string>();
+    
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("Dashboard", policy =>
             policy
-                .WithOrigins("http://localhost:4200")
+                .WithOrigins(allowedOrigins)
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials());

@@ -33,7 +33,7 @@ public class TaskWorkerService : BackgroundService
     private IChannel? _channel;
 
     private readonly ITaskEventPublisher _eventPublisher;
-    
+
     private readonly TaskMetrics _metrics;
 
     public TaskWorkerService(
@@ -88,41 +88,20 @@ public class TaskWorkerService : BackgroundService
     private async Task ProcessMessageAsync(BasicDeliverEventArgs ea, CancellationToken cancellationToken)
     {
         var startTime = Stopwatch.GetTimestamp();
-        
-        var propagator    = Propagators.DefaultTextMapPropagator;
-        var parentContext = propagator.Extract(
-            default,
-            ea.BasicProperties.Headers,
-            (headers, key) =>
-            {
-                if (headers.TryGetValue(key, out var value) && value is byte[] bytes)
-                    return new[] { Encoding.UTF8.GetString(bytes) };
-                return Enumerable.Empty<string>();
-            });
+        using var activity = ActivitySource.StartActivity("rabbitmq.consume");
 
-        Baggage.Current = parentContext.Baggage;
-        
-        using var activity = ActivitySource.StartActivity(
-            "rabbitmq.consume",
-            ActivityKind.Consumer,
-            parentContext.ActivityContext);
-        
         var taskId = Guid.Empty;
 
         try
         {
-            var body = Encoding.UTF8.GetString(ea.Body.Span);
-            var taskItem = JsonSerializer.Deserialize<TaskItem>(body);
-
+            var taskItem = DeserializeMessage(ea.Body);
             if (taskItem is null)
             {
-                activity?.SetStatus(ActivityStatusCode.Error, "Failed to deserialize message");
                 await _channel!.BasicRejectAsync(ea.DeliveryTag, requeue: false);
                 return;
             }
 
             taskId = taskItem.Id;
-
             activity?.SetTag("task.id", taskId.ToString());
             activity?.SetTag("task.type", taskItem.Type);
 
@@ -132,42 +111,12 @@ public class TaskWorkerService : BackgroundService
             var task = await repository.GetByIdAsync(taskId, cancellationToken);
             if (task is null)
             {
-                activity?.SetStatus(ActivityStatusCode.Error, "Task not found in database");
                 await _channel!.BasicRejectAsync(ea.DeliveryTag, requeue: false);
                 return;
             }
-            
-            _metrics.RecordTaskStarted(task.Type);
 
-            using (var processActivity = ActivitySource.StartActivity("task.process"))
-            {
-                processActivity?.SetTag("task.id", task.Id.ToString());
-                processActivity?.SetTag("task.type", task.Type);
-                processActivity?.SetTag("task.retry_count", task.RetryCount);
+            await ExecuteTaskAsync(task, repository, cancellationToken);
 
-                task.MarkAsRunning();
-                await repository.UpdateAsync(task, cancellationToken);
-
-                await _eventPublisher.PublishStatusChangedAsync(
-                    task.Id,
-                    JobStatus.Queued,
-                    JobStatus.Running,
-                    cancellationToken);
-
-                await SimulateWorkAsync(task, cancellationToken);
-
-                task.MarkAsCompleted();
-                await repository.UpdateAsync(task, cancellationToken);
-
-                await _eventPublisher.PublishStatusChangedAsync(
-                    task.Id,
-                    JobStatus.Running,
-                    JobStatus.Completed,
-                    cancellationToken);
-
-                processActivity?.SetTag("task.status", "completed");
-            }
-            
             var duration = Stopwatch.GetElapsedTime(startTime).TotalSeconds;
             _metrics.RecordTaskCompleted(task.Type, duration);
 
@@ -181,10 +130,45 @@ public class TaskWorkerService : BackgroundService
         {
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             activity?.RecordException(ex);
-            
+
             _logger.LogError(ex, "Failed to process task {TaskId}", taskId);
             await HandleFailureAsync(ea, taskId, ex.Message, cancellationToken);
         }
+    }
+
+    private static TaskItem? DeserializeMessage(ReadOnlyMemory<byte> body)
+    {
+        var json = Encoding.UTF8.GetString(body.Span);
+        return JsonSerializer.Deserialize<TaskItem>(json);
+    }
+
+    private async Task ExecuteTaskAsync(
+        TaskItem task,
+        ITaskRepository repository,
+        CancellationToken cancellationToken)
+    {
+        _metrics.RecordTaskStarted(task.Type);
+
+        task.MarkAsRunning();
+        await repository.UpdateAsync(task, cancellationToken);
+        await PublishStatusChangeAsync(
+            task.Id, JobStatus.Queued, JobStatus.Running, cancellationToken);
+
+        using (var processActivity = ActivitySource.StartActivity("task.process"))
+        {
+            processActivity?.SetTag("task.id", task.Id.ToString());
+            processActivity?.SetTag("task.type", task.Type);
+            processActivity?.SetTag("task.retry_count", task.RetryCount);
+
+            await SimulateWorkAsync(task, cancellationToken);
+
+            processActivity?.SetTag("task.status", "completed");
+        }
+
+        task.MarkAsCompleted();
+        await repository.UpdateAsync(task, cancellationToken);
+        await PublishStatusChangeAsync(
+            task.Id, JobStatus.Running, JobStatus.Completed, cancellationToken);
     }
 
     private async Task HandleFailureAsync(
@@ -222,6 +206,16 @@ public class TaskWorkerService : BackgroundService
             _logger.LogError(ex, "Failed to handle task failure for {TaskId}", taskId);
             await _channel!.BasicRejectAsync(ea.DeliveryTag, requeue: false);
         }
+    }
+
+    private async Task PublishStatusChangeAsync(
+        Guid taskId,
+        JobStatus previous,
+        JobStatus next,
+        CancellationToken cancellationToken)
+    {
+        await _eventPublisher.PublishStatusChangedAsync(
+            taskId, previous, next, cancellationToken);
     }
 
     private static async Task SimulateWorkAsync(TaskItem task, CancellationToken cancellationToken)
