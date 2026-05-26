@@ -1,36 +1,36 @@
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { BehaviorSubject } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface TaskStatusUpdate {
-  taskId: string;
+  taskId:         string;
   previousStatus: string;
-  newStatus: string;
-  occurredAt: string;
+  newStatus:      string;
+  occurredAt:     string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class TaskHubService {
   private hubConnection!: signalR.HubConnection;
 
-  private updatesSubject = new BehaviorSubject<TaskStatusUpdate[]>([]);
-  public updates$ = this.updatesSubject.asObservable();
+  private readonly updatesSubject = new BehaviorSubject<TaskStatusUpdate[]>([]);
+  public readonly updates$ = this.updatesSubject.asObservable();
 
   public startConnection(): void {
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl('http://localhost:5185/hubs/tasks')
+      .withUrl(environment.hubUrl)
       .withAutomaticReconnect()
       .build();
 
     this.hubConnection
       .start()
       .then(() => console.log('SignalR connected'))
-      .catch(err => console.error('SignalR error:', err));
+      .catch(err => console.error('SignalR connection error:', err));
 
     this.hubConnection.on('ReceiveTaskStatusUpdate',
       (update: TaskStatusUpdate) => {
         const current = this.updatesSubject.getValue();
-        // Зберігаємо останні 50 оновлень
         this.updatesSubject.next([update, ...current].slice(0, 50));
       });
   }

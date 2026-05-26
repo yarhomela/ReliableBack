@@ -1,19 +1,19 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { AsyncPipe } from '@angular/common';
-import { TaskHubService, TaskStatusUpdate } from '../../services/task-hub.service';
-import { Observable } from 'rxjs';
+import {Component, OnInit, OnDestroy} from '@angular/core';
+import {AsyncPipe} from '@angular/common';
+import {TaskHubService, TaskStatusUpdate} from '../../services/task-hub.service';
+import {Observable} from 'rxjs';
 
 @Component({
   selector: 'app-task-list',
   standalone: true,
-  imports: [AsyncPipe],  // тільки AsyncPipe — більше нічого не потрібно
+  imports: [AsyncPipe],
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.scss']
 })
 export class TaskListComponent implements OnInit, OnDestroy {
-  updates$: Observable<TaskStatusUpdate[]>;
+  readonly updates$: Observable<TaskStatusUpdate[]>;
 
-  constructor(private taskHub: TaskHubService) {
+  constructor(private readonly taskHub: TaskHubService) {
     this.updates$ = this.taskHub.updates$;
   }
 
@@ -26,9 +26,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
   }
 
   formatTime(isoString: string): string {
-    const date = new Date(isoString);
-    return date.toLocaleTimeString('uk-UA', {
-      hour:   '2-digit',
+    return new Date(isoString).toLocaleTimeString('uk-UA', {
+      hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     });
@@ -36,13 +35,13 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
-      'Pending':      '#6c757d',
-      'Queued':       '#0d6efd',
-      'Running':      '#fd7e14',
-      'Completed':    '#198754',
-      'Failed':       '#dc3545',
-      'Retrying':     '#ffc107',
-      'DeadLettered': '#6f42c1'
+      Pending: '#6c757d',
+      Queued: '#0d6efd',
+      Running: '#fd7e14',
+      Completed: '#198754',
+      Failed: '#dc3545',
+      Retrying: '#ffc107',
+      DeadLettered: '#6f42c1'
     };
     return colors[status] ?? '#6c757d';
   }

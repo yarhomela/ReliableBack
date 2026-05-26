@@ -1,6 +1,8 @@
-﻿using ReliableBack.Application.Common;
+﻿using Microsoft.Extensions.Options;
+using ReliableBack.Application.Common;
 using ReliableBack.Application.Common.Interfaces;
 using ReliableBack.Domain.Tasks;
+using ReliableBack.Infrastructure.Messaging.Settings;
 
 namespace ReliableBack.Worker;
 
@@ -8,15 +10,13 @@ public class WatchdogService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<WatchdogService> _logger;
-    
-    private static readonly TimeSpan StalledThreshold = TimeSpan.FromMinutes(10);
-    
-    private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(30);
+    private readonly WorkerSettings _settings;
 
-    public WatchdogService(IServiceScopeFactory scopeFactory, ILogger<WatchdogService> logger)
+    public WatchdogService(IServiceScopeFactory scopeFactory, ILogger<WatchdogService> logger, IOptions<WorkerSettings> workerSettings)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _settings =  workerSettings.Value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -26,7 +26,7 @@ public class WatchdogService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             await RunCheckAsync(stoppingToken);
-            await Task.Delay(CheckInterval, stoppingToken);
+            await Task.Delay(_settings.CheckIntervalSeconds, stoppingToken);
         }
     }
 
@@ -74,8 +74,11 @@ public class WatchdogService : BackgroundService
     private async Task RecoverStalledTasksAsync(ITaskRepository repository, IMessagePublisher publisher,
         CancellationToken cancellationToken)
     {
+        var stalledThreshold = TimeSpan.FromMinutes(
+            _settings.StalledThresholdMinutes);
+        
         var stalledTasks = await repository.GetStalledTasksAsync(
-            StalledThreshold, cancellationToken);
+            stalledThreshold, cancellationToken);
 
         foreach (var task in stalledTasks)
         {
