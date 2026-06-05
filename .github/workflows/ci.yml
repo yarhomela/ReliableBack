@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  checks: write
+  contents: read
+
 env:
   DOTNET_VERSION: '8.0.x'
   SOLUTION_PATH: 'ReliableBack.sln'
