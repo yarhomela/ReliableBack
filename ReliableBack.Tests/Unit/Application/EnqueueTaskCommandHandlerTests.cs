@@ -19,7 +19,7 @@ public class EnqueueTaskCommandHandlerTests
     {
         _repository = Substitute.For<ITaskRepository>();
         _publisher  = Substitute.For<IMessagePublisher>();
-        var metrics = Substitute.For<TaskMetrics>();
+        var metrics = new TaskMetrics();
         _handler    = new EnqueueTaskCommandHandler(_repository, _publisher, metrics);
     }
 
