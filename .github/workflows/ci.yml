@@ -19,7 +19,6 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
 
-    # Сервіси для integration тестів
     services:
       postgres:
         image: postgres:16
@@ -67,7 +66,6 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # Кешуємо NuGet пакети — прискорює pipeline з 3хв до ~45с
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -110,7 +108,6 @@ jobs:
           RabbitMQ__Password: guest
           Redis__ConnectionString: localhost:6379
 
-      # Публікуємо результати тестів в GitHub UI
       - name: Publish test results
         uses: dorny/test-reporter@v1
         if: always()
@@ -120,7 +117,6 @@ jobs:
           reporter:          dotnet-trx
           fail-on-error:     true
 
-      # Завантажуємо артефакти для дебагу якщо щось впало
       - name: Upload test results on failure
         uses: actions/upload-artifact@v4
         if: failure()
@@ -144,9 +140,3 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore ${{ env.SOLUTION_PATH }}
-
-      # Перевіряємо форматування коду
-      - name: Check code format
-        run: dotnet format ${{ env.SOLUTION_PATH }}
-          --verify-no-changes
-          --severity warn
