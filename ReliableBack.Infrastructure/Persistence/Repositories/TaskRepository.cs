@@ -11,6 +11,11 @@ public class TaskRepository : ITaskRepository
     private readonly ReliableBackDbContext _context;
     private readonly string _connectionString;
     
+    static TaskRepository()
+    {
+        SqlMapper.AddTypeHandler(new JsonDocumentTypeHandler());
+    }
+    
     public TaskRepository(ReliableBackDbContext context, string connectionString)
     {
         _context = context;
