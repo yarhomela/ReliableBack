@@ -20,7 +20,7 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasColumnName("type")
             .HasMaxLength(100)
             .IsRequired();
-        
+
         builder.Property(t => t.Payload)
             .HasColumnName("payload")
             .HasColumnType("jsonb")
@@ -28,7 +28,7 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasConversion(
                 v => v.RootElement.GetRawText(),
                 v => JsonDocument.Parse(v, new JsonDocumentOptions()));
-        
+
         builder.Property(t => t.Status)
             .HasColumnName("status")
             .HasMaxLength(50)
@@ -63,7 +63,7 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.Property(t => t.UpdatedAt)
             .HasColumnName("updated_at")
             .IsRequired();
-        
+
         builder.HasIndex(t => t.Status)
             .HasDatabaseName("ix_tasks_status");
 

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using MediatR;
+﻿using MediatR;
 using ReliableBack.Domain.Tasks;
 
 namespace ReliableBack.Application.Tasks.Queries.GetTaskList;

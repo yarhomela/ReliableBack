@@ -14,10 +14,10 @@ public class EnqueueTaskCommandValidatorTests
     public async Task Validate_ShouldPass_WhenCommandIsValid()
     {
         var command = new EnqueueTaskCommand(
-            Type:        "email.send",
-            Payload:     JsonDocument.Parse("{}"),
-            Priority:    JobPriority.Normal,
-            MaxRetries:  3,
+            Type: "email.send",
+            Payload: JsonDocument.Parse("{}"),
+            Priority: JobPriority.Normal,
+            MaxRetries: 3,
             ScheduledAt: null);
 
         var result = await _validator.ValidateAsync(command);
@@ -29,7 +29,7 @@ public class EnqueueTaskCommandValidatorTests
     public async Task Validate_ShouldFail_WhenTypeIsEmpty()
     {
         var command = new EnqueueTaskCommand(
-            Type:    string.Empty,
+            Type: string.Empty,
             Payload: JsonDocument.Parse("{}"));
 
         var result = await _validator.ValidateAsync(command);
@@ -43,7 +43,7 @@ public class EnqueueTaskCommandValidatorTests
     public async Task Validate_ShouldFail_WhenTypeExceedsMaxLength()
     {
         var command = new EnqueueTaskCommand(
-            Type:    new string('a', 101),
+            Type: new string('a', 101),
             Payload: JsonDocument.Parse("{}"));
 
         var result = await _validator.ValidateAsync(command);
@@ -57,8 +57,8 @@ public class EnqueueTaskCommandValidatorTests
     public async Task Validate_ShouldFail_WhenMaxRetriesIsNegative()
     {
         var command = new EnqueueTaskCommand(
-            Type:       "email.send",
-            Payload:    JsonDocument.Parse("{}"),
+            Type: "email.send",
+            Payload: JsonDocument.Parse("{}"),
             MaxRetries: -1);
 
         var result = await _validator.ValidateAsync(command);
@@ -72,8 +72,8 @@ public class EnqueueTaskCommandValidatorTests
     public async Task Validate_ShouldFail_WhenMaxRetriesExceedsTen()
     {
         var command = new EnqueueTaskCommand(
-            Type:       "email.send",
-            Payload:    JsonDocument.Parse("{}"),
+            Type: "email.send",
+            Payload: JsonDocument.Parse("{}"),
             MaxRetries: 11);
 
         var result = await _validator.ValidateAsync(command);
@@ -85,8 +85,8 @@ public class EnqueueTaskCommandValidatorTests
     public async Task Validate_ShouldFail_WhenScheduledAtIsInThePast()
     {
         var command = new EnqueueTaskCommand(
-            Type:        "email.send",
-            Payload:     JsonDocument.Parse("{}"),
+            Type: "email.send",
+            Payload: JsonDocument.Parse("{}"),
             ScheduledAt: DateTime.UtcNow.AddHours(-1));
 
         var result = await _validator.ValidateAsync(command);
@@ -100,8 +100,8 @@ public class EnqueueTaskCommandValidatorTests
     public async Task Validate_ShouldPass_WhenScheduledAtIsNull()
     {
         var command = new EnqueueTaskCommand(
-            Type:        "email.send",
-            Payload:     JsonDocument.Parse("{}"),
+            Type: "email.send",
+            Payload: JsonDocument.Parse("{}"),
             ScheduledAt: null);
 
         var result = await _validator.ValidateAsync(command);

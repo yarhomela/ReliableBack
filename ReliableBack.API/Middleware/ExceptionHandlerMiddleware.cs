@@ -31,7 +31,7 @@ public class ExceptionHandlerMiddleware
     {
         var (statusCode, message) = exception switch
         {
-            ArgumentException  => (HttpStatusCode.BadRequest, exception.Message),
+            ArgumentException => (HttpStatusCode.BadRequest, exception.Message),
             KeyNotFoundException => (HttpStatusCode.NotFound, exception.Message),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred.")
         };

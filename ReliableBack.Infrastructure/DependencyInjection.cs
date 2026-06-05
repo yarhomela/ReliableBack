@@ -22,17 +22,17 @@ public static class DependencyInjection
                                    "Connection string 'PostgreSQL' is not configured.");
 
         services.AddDbContext<ReliableBackDbContext>(options => options.UseNpgsql(connectionString));
-        
+
         services.AddScoped<ITaskRepository>(sp => new TaskRepository(
             sp.GetRequiredService<ReliableBackDbContext>(),
             connectionString));
 
         services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
         services.AddScoped<ITaskCache, RedisTaskCache>();
-        
+
         services.Configure<RabbitMqSettings>(configuration.GetSection("RabbitMQ"));
         services.Configure<WorkerSettings>(configuration.GetSection("Worker"));
-        
+
         var redisSettings = configuration.GetRequiredSettings<RedisSettings>("Redis");
 
         services.AddSingleton<IConnectionMultiplexer>(

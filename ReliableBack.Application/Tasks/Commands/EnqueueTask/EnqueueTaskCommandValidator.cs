@@ -2,8 +2,7 @@
 
 namespace ReliableBack.Application.Tasks.Commands.EnqueueTask;
 
-public sealed class EnqueueTaskCommandValidator
-    : AbstractValidator<EnqueueTaskCommand>
+public sealed class EnqueueTaskCommandValidator : AbstractValidator<EnqueueTaskCommand>
 {
     public EnqueueTaskCommandValidator()
     {

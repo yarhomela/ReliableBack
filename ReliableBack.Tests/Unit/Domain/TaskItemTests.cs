@@ -189,7 +189,7 @@ public class TaskItemTests
         {
             task.RecordFailure("Error");
         }
-        
+
         var delay = task.GetRetryDelay();
 
         delay.Should().BeLessThanOrEqualTo(TimeSpan.FromHours(1));

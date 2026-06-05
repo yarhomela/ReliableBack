@@ -9,7 +9,7 @@ public class ReliableBackDbContext : DbContext
         : base(options)
     {
     }
-    
+
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

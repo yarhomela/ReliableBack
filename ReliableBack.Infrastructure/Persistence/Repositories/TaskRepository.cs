@@ -10,18 +10,18 @@ public class TaskRepository : ITaskRepository
 {
     private readonly ReliableBackDbContext _context;
     private readonly string _connectionString;
-    
+
     static TaskRepository()
     {
         SqlMapper.AddTypeHandler(new JsonDocumentTypeHandler());
     }
-    
+
     public TaskRepository(ReliableBackDbContext context, string connectionString)
     {
         _context = context;
         _connectionString = connectionString;
     }
-    
+
     public async Task AddAsync(TaskItem task, CancellationToken cancellationToken = default)
     {
         await _context.Tasks.AddAsync(task, cancellationToken);
@@ -33,7 +33,7 @@ public class TaskRepository : ITaskRepository
         _context.Tasks.Update(task);
         await _context.SaveChangesAsync(cancellationToken);
     }
-    
+
     public async Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using var connection = new NpgsqlConnection(_connectionString);
@@ -45,7 +45,7 @@ public class TaskRepository : ITaskRepository
         return result;
     }
 
-    public async Task<IReadOnlyList<TaskItem>> GetAllAsync(GetTaskListParameters parameters, 
+    public async Task<IReadOnlyList<TaskItem>> GetAllAsync(GetTaskListParameters parameters,
         CancellationToken cancellationToken = default)
     {
         await using var connection = new NpgsqlConnection(_connectionString);
@@ -53,14 +53,14 @@ public class TaskRepository : ITaskRepository
         var results = await connection.QueryAsync<TaskItem>(
             TaskQueries.GetAll, new
             {
-                Status   = parameters.Status?.ToString(),
+                Status = parameters.Status?.ToString(),
                 PageSize = parameters.PageSize,
-                Offset   = (parameters.Page - 1) * parameters.PageSize
+                Offset = (parameters.Page - 1) * parameters.PageSize
             });
 
         return results.ToList();
     }
-    
+
     public async Task<IReadOnlyList<TaskItem>> GetScheduledForRetryAsync(CancellationToken cancellationToken = default)
     {
         await using var connection = new NpgsqlConnection(_connectionString);

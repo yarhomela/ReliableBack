@@ -1,4 +1,6 @@
 ﻿using FluentAssertions;
+using ReliableBack.Application.Tasks.Queries.GetTaskList;
+using ReliableBack.Domain.Tasks;
 using ReliableBack.Infrastructure.Persistence.Repositories;
 using ReliableBack.Tests.Common.Builders;
 using ReliableBack.Tests.Common.Fixtures;
@@ -14,9 +16,7 @@ public class TaskRepositoryTests : IClassFixture<PostgreSqlFixture>
     public TaskRepositoryTests(PostgreSqlFixture fixture)
     {
         _fixture = fixture;
-        _repository = new TaskRepository(
-            fixture.DbContext,
-            fixture.ConnectionString);
+        _repository = new TaskRepository(fixture.DbContext, fixture.ConnectionString);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class TaskRepositoryTests : IClassFixture<PostgreSqlFixture>
         await _repository.UpdateAsync(task);
 
         var updated = await _repository.GetByIdAsync(task.Id);
-        updated!.Status.Should().Be(Domain.Tasks.JobStatus.Running);
+        updated!.Status.Should().Be(JobStatus.Running);
     }
 
     [Fact]
@@ -73,12 +73,11 @@ public class TaskRepositoryTests : IClassFixture<PostgreSqlFixture>
         completedTask.MarkAsCompleted();
         await _repository.UpdateAsync(completedTask);
 
-        var parameters = new Application.Tasks.Queries.GetTaskList
-            .GetTaskListParameters(Domain.Tasks.JobStatus.Pending, 1, 20);
+        var parameters = new GetTaskListParameters(JobStatus.Pending, 1, 20);
 
         var results = await _repository.GetAllAsync(parameters);
 
-        results.Should().OnlyContain(t => t.Status == Domain.Tasks.JobStatus.Pending);
+        results.Should().OnlyContain(t => t.Status == JobStatus.Pending);
     }
 
     [Fact]
@@ -90,12 +89,12 @@ public class TaskRepositoryTests : IClassFixture<PostgreSqlFixture>
 
         await _repository.AddAsync(dueTask);
         dueTask.RecordFailure("Error");
-        
+
         dueTask.MarkAsQueued();
         await _repository.UpdateAsync(dueTask);
 
         var results = await _repository.GetScheduledForRetryAsync();
-        
+
         results.Should().NotContain(t => t.Id == dueTask.Id);
     }
 }

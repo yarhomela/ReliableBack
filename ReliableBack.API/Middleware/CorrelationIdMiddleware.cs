@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Serilog.Context;
 
 namespace ReliableBack.API.Middleware;
 
@@ -27,7 +28,7 @@ public class CorrelationIdMiddleware
             return Task.CompletedTask;
         });
 
-        using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
+        using (LogContext.PushProperty("CorrelationId", correlationId))
         {
             await _next(context);
         }

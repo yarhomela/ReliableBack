@@ -11,7 +11,7 @@ public class TaskStatusBroadcaster : BackgroundService
     private readonly ILogger<TaskStatusBroadcaster> _logger;
 
     public TaskStatusBroadcaster(
-        ITaskEventSubscriber subscriber, 
+        ITaskEventSubscriber subscriber,
         IHubContext<TaskStatusHub> hubContext,
         ILogger<TaskStatusBroadcaster> logger)
     {
@@ -30,7 +30,7 @@ public class TaskStatusBroadcaster : BackgroundService
                     previousStatus,
                     newStatus,
                     DateTime.UtcNow);
-                
+
                 await _hubContext.Clients.All.SendAsync(
                     "ReceiveTaskStatusUpdate",
                     notification,
@@ -41,7 +41,7 @@ public class TaskStatusBroadcaster : BackgroundService
                     taskId, previousStatus, newStatus);
             },
             stoppingToken);
-        
+
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 }

@@ -18,16 +18,16 @@ public class EnqueueTaskCommandHandlerTests
     public EnqueueTaskCommandHandlerTests()
     {
         _repository = Substitute.For<ITaskRepository>();
-        _publisher  = Substitute.For<IMessagePublisher>();
+        _publisher = Substitute.For<IMessagePublisher>();
         var metrics = new TaskMetrics();
-        _handler    = new EnqueueTaskCommandHandler(_repository, _publisher, metrics);
+        _handler = new EnqueueTaskCommandHandler(_repository, _publisher, metrics);
     }
 
     [Fact]
     public async Task Handle_ShouldReturnTaskId()
     {
         var command = new EnqueueTaskCommand(
-            Type:    "email.send",
+            Type: "email.send",
             Payload: JsonDocument.Parse("{}"));
 
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -39,7 +39,7 @@ public class EnqueueTaskCommandHandlerTests
     public async Task Handle_ShouldCallRepositoryAddAsync()
     {
         var command = new EnqueueTaskCommand(
-            Type:    "email.send",
+            Type: "email.send",
             Payload: JsonDocument.Parse("{}"));
 
         await _handler.Handle(command, CancellationToken.None);
@@ -52,8 +52,8 @@ public class EnqueueTaskCommandHandlerTests
     public async Task Handle_ShouldPublishToCorrectQueue_WhenPriorityIsHigh()
     {
         var command = new EnqueueTaskCommand(
-            Type:     "email.send",
-            Payload:  JsonDocument.Parse("{}"),
+            Type: "email.send",
+            Payload: JsonDocument.Parse("{}"),
             Priority: JobPriority.High);
 
         await _handler.Handle(command, CancellationToken.None);
@@ -69,8 +69,8 @@ public class EnqueueTaskCommandHandlerTests
     public async Task Handle_ShouldPublishToNormalQueue_WhenPriorityIsNormal()
     {
         var command = new EnqueueTaskCommand(
-            Type:     "email.send",
-            Payload:  JsonDocument.Parse("{}"),
+            Type: "email.send",
+            Payload: JsonDocument.Parse("{}"),
             Priority: JobPriority.Normal);
 
         await _handler.Handle(command, CancellationToken.None);
@@ -92,7 +92,7 @@ public class EnqueueTaskCommandHandlerTests
             Arg.Any<CancellationToken>());
 
         var command = new EnqueueTaskCommand(
-            Type:    "email.send",
+            Type: "email.send",
             Payload: JsonDocument.Parse("{}"));
 
         await _handler.Handle(command, CancellationToken.None);
